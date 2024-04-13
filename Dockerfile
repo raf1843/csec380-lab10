@@ -7,19 +7,22 @@ RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
 RUN sed -i '/stretch-updates/d' /etc/apt/sources.list
 RUN sed -i '/stretch\/updates/d' /etc/apt/sources.list 
 
+ENV XDG_RUNTIME_DIR=/run/user/0
+
+
 # Update and install dependencies
 RUN apt-get update
-RUN apt-get install -y acl curl fping git graphviz imagemagick libcurl4-gnutls-dev libgmp-dev libgmp3-dev libpng-dev libsnmp-dev libxml2-dev mariadb-client mariadb-server mtr-tiny nginx-full nmap rrdtool snmp snmpd unzip python3-pymysql python3-redis python3-setuptools python3-systemd python3-pip whois traceroute
+RUN apt-get install -y acl curl dbus fping git graphviz imagemagick libcurl4-gnutls-dev libgmp-dev libgmp3-dev libpng-dev libsnmp-dev libxml2-dev mariadb-client mariadb-server mtr-tiny nginx-full nmap rrdtool snmp snmpd systemd unzip python3-pymysql python3-redis python3-setuptools python3-systemd python3-pip wget whois traceroute
 # this line is added to help find gmp.h
 RUN ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h
 RUN docker-php-ext-install curl gd gmp json mbstring mysql snmp xml zip
-RUN pip3 install python3-dotenv
+RUN pip3 install python-dotenv
 
 # Add librenms user
 RUN useradd librenms -d /opt/librenms -M -r -s "$(which bash)"
 
 # Copy Exploit DB files over
-COPY librenms-1.46 /opt/librenms-1.46
+COPY librenms-1.46 /opt/librenms
 
 # Set permissions
 RUN chown -R librenms:librenms /opt/librenms
@@ -28,7 +31,19 @@ RUN setfacl -d -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/boot
 RUN setfacl -R -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
 
 # Install PHP dependencies
-RUN su - librenms; ./opt/librenms/scripts/composer_wrapper.php install --no-dev; exit
+RUN wget https://getcomposer.org/composer-stable.phar
+RUN mv composer-stable.phar /usr/bin/composer
+RUN chmod +x /usr/bin/composer
 
-# Set timezone
+# Set timezone - difficulties with timedatectl so skipping that for now
+# Import configured php.ini
+COPY php.ini "$PHP_INI_DIR/php.ini"
+
+# Configure MariaDB
+COPY 50-server.cnf /etc/mysql/mariadb.conf.d/
+COPY setup.sql setup.sql
+RUN systemctl enable mariadb
+RUN systemctl restart mariadb
+RUN mysql -u root < setup.sql
+
 
