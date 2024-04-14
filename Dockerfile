@@ -7,9 +7,6 @@ RUN sed -i 's/deb.debian.org/archive.debian.org/g' /etc/apt/sources.list
 RUN sed -i '/stretch-updates/d' /etc/apt/sources.list
 RUN sed -i '/stretch\/updates/d' /etc/apt/sources.list 
 
-ENV XDG_RUNTIME_DIR=/run/user/0
-
-
 # Update and install dependencies
 RUN apt-get update
 RUN apt-get install -y acl curl dbus fping git graphviz imagemagick libcurl4-gnutls-dev libgmp-dev libgmp3-dev libpng-dev libsnmp-dev libxml2-dev mariadb-client mariadb-server mtr-tiny nginx-full nmap rrdtool snmp snmpd systemd unzip python3-pymysql python3-redis python3-setuptools python3-systemd python3-pip wget whois traceroute
@@ -43,7 +40,15 @@ COPY php.ini "$PHP_INI_DIR/php.ini"
 COPY 50-server.cnf /etc/mysql/mariadb.conf.d/
 COPY setup.sql setup.sql
 RUN systemctl enable mariadb
-RUN systemctl restart mariadb
-RUN mysql -u root < setup.sql
+RUN service mysql restart && mysql -u root < setup.sql
 
+# Configure PHP-FPM
+COPY fpm.conf /usr/local/etc/php-fpm.d/librenms.conf
+COPY nginx.conf /etc/nginx/conf.d/librenms.conf
+RUN rm /etc/nginx/sites-enabled/default
+RUN service nginx restart
+
+# Configure snmpd
+RUN cp /opt/librenms/snmpd.conf.example /etc/snmp/snmpd.conf
+# leaving community string as default
 
