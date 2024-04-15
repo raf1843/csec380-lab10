@@ -28,9 +28,12 @@ RUN setfacl -d -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/boot
 RUN setfacl -R -m g::rwx /opt/librenms/rrd /opt/librenms/logs /opt/librenms/bootstrap/cache/ /opt/librenms/storage/
 
 # Install PHP dependencies
-RUN wget https://getcomposer.org/composer-stable.phar
-RUN mv composer-stable.phar /usr/bin/composer
+COPY composer.phar /usr/bin/composer
 RUN chmod +x /usr/bin/composer
+COPY composer.json /opt/librenms
+COPY composer.lock /opt/librenms
+# must do the below step in interactive shell
+#RUN su - librenms && /opt/librenms/scripts/composer_wrapper.php install --no-dev && exit
 
 # Set timezone - difficulties with timedatectl so skipping that for now
 # Import configured php.ini
@@ -46,9 +49,14 @@ RUN service mysql restart && mysql -u root < setup.sql
 COPY fpm.conf /usr/local/etc/php-fpm.d/librenms.conf
 COPY nginx.conf /etc/nginx/conf.d/librenms.conf
 RUN rm /etc/nginx/sites-enabled/default
+# the below must be run in interactive shell
+#RUN chmod 777 /run/php-fpm-librenms.sock
 RUN service nginx restart
 
 # Configure snmpd
 RUN cp /opt/librenms/snmpd.conf.example /etc/snmp/snmpd.conf
 # leaving community string as default
+
+
+EXPOSE 80
 
