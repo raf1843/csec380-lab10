@@ -12,7 +12,7 @@ RUN apt-get update
 RUN apt-get install -y acl curl dbus fping git graphviz imagemagick libcurl4-gnutls-dev libgmp-dev libgmp3-dev libpng-dev libsnmp-dev libxml2-dev mariadb-client mariadb-server mtr-tiny nginx-full nmap rrdtool snmp snmpd systemd unzip python3-pymysql python3-redis python3-setuptools python3-systemd python3-pip wget whois traceroute
 # this line is added to help find gmp.h
 RUN ln -s /usr/include/x86_64-linux-gnu/gmp.h /usr/include/gmp.h
-RUN docker-php-ext-install curl gd gmp json mbstring mysql mysqli snmp xml zip
+RUN docker-php-ext-install curl gd gmp json mbstring mysql snmp xml zip
 RUN pip3 install python-dotenv
 
 # Add librenms user
@@ -57,7 +57,6 @@ RUN service nginx restart
 RUN cp /opt/librenms/snmpd.conf.example /etc/snmp/snmpd.conf
 # leaving community string as default
 
-# for interactive shell needs
-COPY startup.sh startup.sh
+
 EXPOSE 80
-EXPOSE 3306
+
